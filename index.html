@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UrbanNoiseNet</title>
+<meta name="theme-color" content="#060d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>window.URBANNOISENET_API="https://urbannoisenet-backend.onrender.com";/* change this to your backend URL */
+window.MAP_KEY="";/* paste your MapTiler key between the quotes. If empty, a free keyless map is used. */</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#060d12;--card:#0d1a23;--card2:#132736;--line:rgba(140,205,220,.13);--tx:#eaf6f8;--mut:#7f9aa6;--ac:#3de6d0;--ac2:rgba(61,230,208,.12);--on:#04201c;--warn:#ffb454;--bad:#ff6b6b;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef4f7;--card:#fff;--card2:#f6fafb;--line:rgba(10,40,60,.11);--tx:#0a2230;--mut:#587280;--ac:#00877b;--ac2:rgba(0,135,123,.1);--on:#fff;--warn:#b86400;--bad:#c93636;color-scheme:light}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{background:radial-gradient(110% 50% at 50% -8%,color-mix(in srgb,var(--ac),transparent 84%),transparent 65%),var(--bg);color:var(--tx);font:15px/1.5 "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
+#app{width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;position:relative}
+@media(min-width:500px){#app{border-inline:1px solid var(--line)}}
+.top{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.top b{font-weight:800;letter-spacing:-.02em;font-size:16px}.top .pill{margin-left:auto;text-transform:capitalize}
+.logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--on);background:linear-gradient(140deg,color-mix(in srgb,var(--ac),#fff 28%),var(--ac));box-shadow:0 6px 18px -6px var(--ac)}
+.scr{flex:1;overflow-y:auto;padding:20px 18px 28px;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+h1{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
+h2{font-size:20px;font-weight:600;letter-spacing:-.02em;margin:4px 0 14px}
+.m{color:var(--mut);font-size:13px}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 14px 30px -20px rgba(0,0,0,.6)}
+.row{display:flex;align-items:center;gap:10px;justify-content:space-between}
+button,select,input,textarea{font:inherit;color:var(--tx)}
+.btn{background:linear-gradient(180deg,color-mix(in srgb,var(--ac),#fff 24%),var(--ac));color:var(--on);border:0;border-radius:14px;padding:14px 18px;font-weight:600;width:100%;cursor:pointer;box-shadow:0 12px 26px -12px var(--ac),0 1px 0 rgba(255,255,255,.4) inset;transition:transform .15s}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.6}
+.btn.g{background:transparent;border:1px solid var(--line);color:var(--tx);box-shadow:none}
+.sm{padding:8px 13px;width:auto;border-radius:11px;font-size:13px}
+input,select,textarea{width:100%;background:color-mix(in srgb,var(--bg),transparent 25%);border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin:5px 0 12px}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);outline:0;box-shadow:0 0 0 3px var(--ac2)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+label{font-size:13px;color:var(--mut);font-weight:500}
+.seg{display:flex;background:color-mix(in srgb,var(--bg),transparent 20%);border:1px solid var(--line);border-radius:13px;padding:4px;margin-bottom:14px;gap:2px}
+.seg button{flex:1;border:0;background:none;padding:9px 6px;border-radius:10px;cursor:pointer;color:var(--mut);font-size:14px}
+.seg button.on{background:var(--card2);color:var(--ac);font-weight:600;box-shadow:0 0 0 1px var(--line),0 4px 12px -6px rgba(0,0,0,.5)}
+nav{display:flex;border-top:1px solid var(--line);background:color-mix(in srgb,var(--card),transparent 12%);backdrop-filter:blur(16px);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;background:none;border:0;padding:11px 2px 9px;color:var(--mut);cursor:pointer;font-size:11.5px;position:relative}
+nav button.on{color:var(--ac);font-weight:600}
+nav button.on::before{content:"";position:absolute;top:0;left:32%;right:32%;height:2px;border-radius:0 0 3px 3px;background:var(--ac);box-shadow:0 0 12px var(--ac)}
+nav svg{display:block;margin:0 auto 3px}
+.pill{font-size:12px;font-weight:500;padding:3px 10px;border-radius:99px;background:var(--ac2);color:var(--ac);border:1px solid color-mix(in srgb,var(--ac),transparent 75%)}
+.pill.w{background:transparent;border-color:color-mix(in srgb,var(--warn),transparent 45%);color:var(--warn)}.pill.b{background:color-mix(in srgb,var(--bad),transparent 88%);border-color:color-mix(in srgb,var(--bad),transparent 50%);color:var(--bad)}
+.stage{display:grid;place-items:center;height:290px;position:relative}
+.go{width:144px;height:144px;border-radius:50%;border:0;color:var(--on);font-weight:800;font-size:20px;letter-spacing:-.01em;cursor:pointer;position:relative;z-index:2;background:radial-gradient(circle at 34% 28%,color-mix(in srgb,var(--ac),#fff 55%),var(--ac) 52%,color-mix(in srgb,var(--ac),#000 38%));box-shadow:0 0 0 8px var(--ac2),0 0 60px -6px var(--ac),0 -2px 8px rgba(255,255,255,.4) inset}
+.ring{position:absolute;border:1.5px solid var(--ac);border-radius:50%;width:210px;height:210px;opacity:.14}.ring:nth-child(2){width:262px;height:262px;opacity:.08}
+.live .ring{animation:rg 2.4s ease-out infinite}.live .ring:nth-child(2){animation-delay:.8s}.live .ring:nth-child(3){animation-delay:1.6s}.live .go{animation:br 1.4s ease-in-out infinite}
+@keyframes rg{0%{width:144px;height:144px;opacity:.7}100%{width:300px;height:300px;opacity:0}}
+@keyframes br{50%{transform:scale(.95)}}
+@media (prefers-reduced-motion:reduce){.live .ring,.live .go{animation:none}}
+.big{font-size:36px;font-weight:800;letter-spacing:-.035em;line-height:1.15;text-transform:capitalize}
+.bars{display:flex;align-items:flex-end;gap:5px;height:130px;position:relative;border-bottom:1px solid var(--line)}
+.bars i{flex:1;background:linear-gradient(180deg,var(--ac),var(--ac2));border-radius:4px 4px 0 0}.bars i.o{background:linear-gradient(180deg,var(--warn),transparent)}
+.who{position:absolute;left:0;right:0;border-top:1px dashed var(--bad)}
+.step{display:flex;gap:12px;padding:9px 0;color:var(--mut)}.step.d{color:var(--tx)}
+.step span{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;flex:none}
+.step.d span{background:var(--ac);border-color:var(--ac);color:var(--on);box-shadow:0 0 14px -2px var(--ac)}
+.av{width:76px;height:76px;border-radius:50%;background:linear-gradient(140deg,var(--ac2),transparent);border:1px solid color-mix(in srgb,var(--ac),transparent 60%);color:var(--ac);display:grid;place-items:center;font-size:27px;font-weight:800}
+a{color:var(--ac)}.center{text-align:center}
+#toast{position:absolute;bottom:88px;left:18px;right:18px;background:var(--tx);color:var(--bg);padding:12px;border-radius:14px;font-weight:600;display:none;text-align:center;box-shadow:0 16px 36px -12px rgba(0,0,0,.6)}
+.map{position:relative;height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/40px 40px,var(--bg)}
+.map.heat::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 58%,rgba(255,107,107,.4),transparent 45%),radial-gradient(circle at 30% 30%,color-mix(in srgb,var(--ac),transparent 75%),transparent 40%)}
+.mk{position:absolute;transform:translate(-50%,-50%);background:var(--card);color:var(--ac);border:1px solid var(--ac);border-radius:11px;padding:5px 10px;font-weight:600;font-size:13px;cursor:pointer;z-index:2;box-shadow:0 8px 18px -8px rgba(0,0,0,.7)}
+.mk.w{color:var(--warn);border-color:var(--warn)}.mk.b{color:var(--bad);border-color:var(--bad)}
+.mk.sel{background:var(--ac);color:var(--on);border-color:var(--ac);box-shadow:0 0 0 4px var(--ac2),0 0 22px -2px var(--ac)}
+.gf{position:absolute;border:1.5px dashed var(--ac);background:var(--ac2);border-radius:5px}
+.leaflet-container{background:var(--bg);font:inherit}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card),transparent 20%)!important;color:var(--mut)!important;font-size:10px}
+.leaflet-control-attribution a{color:var(--ac)!important}
+.leaflet-bar a{background:var(--card);color:var(--tx);border-color:var(--line)}
+.lm.mk{position:relative}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API=(window.URBANNOISENET_API||"http://localhost:8000").replace(/\/$/,"");
+const CLASSES0=["children_playing","dog_bark","drilling","gun_shot"];
+const nice=s=>s.replace(/_/g," ");
+const S={user:null,tab:"home",more:null,mode:"login",role:"citizen",busy:false,res:null,step:0,
+ events:[{c:"jackhammer",db:88,z:"Salt Lake Sector V",t:"2 min ago"},{c:"car_horn",db:92,z:"Park Street",t:"9 min ago"},{c:"siren",db:95,z:"AJC Bose Road",t:"21 min ago"}],
+ tickets:[{id:"#UNC-4821",type:"Loud construction",st:"In review"}]};
+const zones=[["Salt Lake Sector V",65,"22:00–06:00"],["Park Street",70,"23:00–05:00"],["Hospital Zone, AJC Bose Rd",50,"All day"],["New Town Action Area",65,"22:00–06:00"]];
+const challans=[["CH-2041","Jackhammer",88,"Salt Lake Sector V","₹5,000","Unpaid"],["CH-2040","Car horn",92,"Park Street","₹1,000","Paid"]];
+const $=s=>document.querySelector(s),app=$("#app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){let t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2200)}
+
+const mem={};
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return mem[k]||null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){mem[k]=v}},del:k=>{try{localStorage.removeItem(k)}catch(e){delete mem[k]}}};
+const tok=()=>ls.get("unn_token")||"",setTok=t=>t?ls.set("unn_token",t):ls.del("unn_token");
+async function api(path,o={}){const ac=new AbortController(),to=setTimeout(()=>ac.abort(),75000);let r;
+try{r=await fetch(API+path,{method:o.method||"GET",headers:{...(o.body?{"Content-Type":"application/json"}:{}),...(tok()?{Authorization:"Bearer "+tok()}:{})},body:o.body?JSON.stringify(o.body):undefined,signal:ac.signal})}
+catch(e){S.api="offline";refreshSrv();throw Object.assign(new Error("Could not reach the server. It may be waking up. Try again in a minute."),{status:0})}finally{clearTimeout(to)}
+let j={};try{j=await r.json()}catch(e){}
+if(!r.ok)throw Object.assign(new Error(typeof j.detail=="string"?j.detail:"Something went wrong ("+r.status+")"),{status:r.status});return j}
+function refreshSrv(){const e=$("#srv");if(!e)return;const m={online:["Server online",""],offline:["Server offline","w"],checking:["Waking server...","w"]}[S.api||"checking"];e.textContent=m[0];e.className="pill "+m[1]}
+function ping(){S.api="checking";const ac=new AbortController(),to=setTimeout(()=>ac.abort(),75000);fetch(API+"/health",{signal:ac.signal}).then(r=>r.json()).then(j=>{S.api="online";S.classes=j.classes;S.authOn=j.auth}).catch(()=>{S.api="offline"}).finally(()=>{clearTimeout(to);refreshSrv()})}
+function encWav(d,sr){const v=new DataView(new ArrayBuffer(44+d.length*2)),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+w(0,"RIFF");v.setUint32(4,36+d.length*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,d.length*2,true);
+for(let i=0;i<d.length;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,d[i]))*32767,true);return new Blob([v],{type:"audio/wav"})}
+async function toWav(blob){const ctx=new(window.AudioContext||window.webkitAudioContext)(),buf=await ctx.decodeAudioData(await blob.arrayBuffer());if(ctx.close)ctx.close();
+const sr=22050,len=Math.max(1,Math.floor(Math.min(buf.duration,4)*sr)),off=new OfflineAudioContext(1,len,sr),src=off.createBufferSource();src.buffer=buf;src.connect(off.destination);src.start();
+return encWav((await off.startRendering()).getChannelData(0),sr)}
+const rh=()=>{const v=$("#v");if(v&&S.user&&S.tab=="home"&&!S.more)home(v)};
+
+function splash(){app.innerHTML=`<div class="scr center" style="display:grid;place-content:center"><div class="stage live" style="height:200px"><i class="ring"></i><i class="ring"></i><i class="ring"></i><div class="av" style="width:90px;height:90px;z-index:2">UN</div></div><h1>UrbanNoiseNet</h1><p class="m">Listen to the city. Classify the noise.</p></div>`;ping();setTimeout(async()=>{if(!tok())return auth();try{S.user=(await api("/auth/me")).user;S.tab="home";S.more=null;shell()}catch(e){if(e.status==401)setTok("");auth();if(e.status!=401)toast(e.message)}},1500)}
+
+function auth(){const su=S.mode==="signup";
+app.innerHTML=`<div class="scr"><h1>${su?"Create account":"Welcome back"}</h1><p class="m" style="margin-bottom:16px">${su?"Join to report noise and track complaints.":"Sign in to monitor and report noise."}</p>
+<div class="seg"><button class="${!su?"on":""}" data-m="login">Log in</button><button class="${su?"on":""}" data-m="signup">Sign up</button></div>
+${su?`<div class="seg"><button class="${S.role=="citizen"?"on":""}" data-r="citizen">Citizen</button><button class="${S.role=="officer"?"on":""}" data-r="officer">Officer</button></div>`:""}
+<div id="f">${su?`<label>Full name</label><input id="nm" autocomplete="name">`:""}
+<label>Email</label><input id="em" type="email" autocomplete="username">
+<label>${su?"Password (8 or more characters)":"Password"}</label><input id="pw" type="password" autocomplete="${su?"new-password":"current-password"}">${su&&S.role=="officer"?`<label>Officer access code</label><input id="oc" type="password" autocomplete="off">`:""}</div>
+${S.authOn===false?`<p style="color:var(--warn);margin-bottom:10px">Accounts are not set up on the server yet. See the README.</p>`:""}
+<button class="btn" id="go">${su?"Create account":"Log in"}</button>
+<p class="m center" style="margin-top:14px">Your account is saved on the server. Passwords are stored hashed, never as plain text.</p></div><div id="toast"></div>`;
+document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;auth()});
+document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{S.role=b.dataset.r;auth()});
+$("#go").onclick=async()=>{const e=$("#em").value.trim().toLowerCase(),p=$("#pw").value,n=su?$("#nm").value.trim():"";
+if(!e||!p||(su&&!n))return toast("Fill in all the fields");
+if(su&&p.length<8)return toast("Use a password of 8 or more characters");
+const b=$("#go");b.disabled=true;b.textContent="Please wait. The server may take a minute to wake up.";
+try{const j=await api(su?"/auth/signup":"/auth/login",{method:"POST",body:su?{name:n,email:e,password:p,role:S.role,officer_code:S.role=="officer"?$("#oc").value:undefined}:{email:e,password:p}});
+setTok(j.token);S.user=j.user;S.tab="home";S.more=null;shell()}catch(err){b.disabled=false;b.textContent=su?"Create account":"Log in";toast(err.message)}}}
+
+const ic=p=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const IC={home:ic('<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),map:ic('<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'),chat:ic('<path d="M4 4h16v12H9l-5 4z"/>'),bars:ic('<path d="M5 20V11M12 20V4M19 20v-6"/>'),more:ic('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),wave:ic('<path d="M3 12h2M7.5 8v8M12 4v16M16.5 8v8M21 11v2"/>')};
+function shell(){const o=S.user.role=="officer";
+const tabs=[["home",IC.home,"Home"],["map",IC.map,"Map"],["complaints",IC.chat,"Complaints"],...(o?[["analytics",IC.bars,"Analytics"]]:[]),["more",IC.more,"More"]];
+app.innerHTML=`<header class="top"><span class="logo">${IC.wave}</span><b>UrbanNoiseNet</b><span class="pill w" id="srv"></span></header><div class="scr" id="v"></div><nav>${tabs.map(t=>`<button class="${S.tab==t[0]?"on":""}" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join("")}</nav><div id="toast"></div>`;
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;S.more=null;shell()});
+const v=$("#v");({home:home,map:mapv,complaints:complaints,analytics:analytics,more:more})[S.tab](v);refreshSrv()}
+
+function evRow(e){return `<div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><div><b>${nice(e.c)}</b><div class="m">${esc(e.z)} · ${e.t}</div></div><span class="pill ${e.db>85?"b":e.db>70?"w":""}">${e.db} dB</span></div>`}
+
+function home(v){const r=S.res;
+v.innerHTML=`<p class="m">Hello, ${esc(S.user.name)} · ${S.user.role}</p><h2>Check the noise around you</h2>
+<div class="stage ${S.busy?"live":""}"><i class="ring"></i><i class="ring"></i><i class="ring"></i><button class="go" id="st" ${S.busy?"disabled":""}>${S.busy?(S.phase=="send"?"Analysing…":"Listening…"):"Start"}</button></div>
+<p class="m center" style="margin-top:-6px">${S.busy?(S.phase=="send"?"Analysing. The server can take up to a minute to wake up.":"Recording 4 seconds"):"Tap Start to record a 4-second clip"}</p>
+${r?`<div class="card" style="margin-top:14px"><div class="row"><span class="m">Detected sound</span>${r.demo?`<span class="pill w">Demo result</span>`:`<span class="pill">Live model</span>`}</div>
+<div class="big">${nice(r.classification)}</div><div class="row m"><span>Confidence ${r.confidence}%</span><span>About ${r.level_db_est} dB</span></div>
+${(r.top3||[]).slice(1).map(t=>`<div class="row m"><span>Also possible: ${nice(t.label)}</span><span>${t.confidence}%</span></div>`).join("")}
+${r.severity=="critical"?`<p style="color:var(--bad);margin-top:8px">Above 90 dB. A challan would be raised in a monitored zone.</p>`:r.severity=="warning"?`<p style="color:var(--warn);margin-top:8px">Above 75 dB. A warning would be issued in a monitored zone.</p>`:""}
+${S.err?`<p style="color:var(--warn);margin-top:8px">${esc(S.err)}</p>`:""}<p class="m" style="margin-top:8px">Levels are estimates from your phone's microphone, not calibrated measurements.</p></div>`:""}
+<div class="card"><div class="row"><b>Recent events nearby</b><span class="pill w">Sample data</span></div>${S.events.map(evRow).join("")}</div>`;
+$("#st").onclick=listen}
+
+async function listen(){S.busy=true;S.phase="rec";S.err="";rh();let res;
+const gp=new Promise(r=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>r({lat:p.coords.latitude,lng:p.coords.longitude}),()=>r(null),{timeout:4000,maximumAge:60000}):r(null));
+try{let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}catch(e){throw new Error("Microphone is blocked. Allow microphone access in your browser settings and try again. Showing a demo result instead.")}
+const mr=new MediaRecorder(st),ch=[];mr.ondataavailable=e=>ch.push(e.data);const done=new Promise(r=>mr.onstop=r);mr.start();setTimeout(()=>mr.stop(),4000);await done;st.getTracks().forEach(t=>t.stop());
+S.phase="send";rh();
+const wav=await toWav(new Blob(ch,{type:mr.mimeType||"audio/webm"})),pos=await gp,fd=new FormData();fd.append("file",wav,"clip.wav");if(pos){fd.append("lat",pos.lat);fd.append("lng",pos.lng)}
+const ac=new AbortController(),to=setTimeout(()=>ac.abort(),75000);let r;
+try{r=await fetch(API+"/classify",{method:"POST",body:fd,signal:ac.signal})}catch(e){S.api="offline";throw new Error("Could not reach the server. Showing a demo result instead.")}finally{clearTimeout(to)}
+if(!r.ok){let m="";try{m=(await r.json()).detail}catch(e){}throw new Error((m||"The server returned an error")+". Showing a demo result instead.")}
+res=await r.json();S.api="online";if(res.top3&&!S.classes)S.classes=res.top3.map(t=>t.label)}
+catch(e){S.err=e.message||"Something went wrong. Showing a demo result instead.";
+const cl=S.classes||CLASSES0,lv=+(60+Math.random()*35).toFixed(1);res={classification:cl[Math.floor(Math.random()*cl.length)],confidence:+(60+Math.random()*35).toFixed(1),level_db_est:lv,peak_db_est:lv,severity:lv>=90?"critical":lv>=75?"warning":"normal",demo:true}}
+S.res=res;S.busy=false;S.phase="";if(!res.demo)S.events.unshift({c:res.classification,db:Math.round(res.level_db_est),z:"Your location",t:"just now"});
+refreshSrv();rh()}
+
+const sens=[{n:"Esplanade Sensor",p:"Esplanade",db:89.4,pk:96.2,f:"1.2 kHz",x:30,y:30,lat:22.5646,lng:88.3513},{n:"Park Street Sensor",p:"Park Street",db:78.5,pk:84.1,f:"0.9 kHz",x:46,y:48,lat:22.5545,lng:88.3525},{n:"AJC Bose Road Sensor",p:"Hospital Zone",db:102.1,pk:108.4,f:"1.6 kHz",x:70,y:58,lat:22.5440,lng:88.3580},{n:"Salt Lake Sensor",p:"Sector V",db:68.2,pk:73,f:"0.6 kHz",x:22,y:68,lat:22.5730,lng:88.4320}];
+let mapSel=0,heat=true,drawing=false,boxes=[[4,4,12,14],[19,4,12,14]];
+let LM=null,LV=null,gfz=[{c:[22.5730,88.4320],r:700},{c:[22.5545,88.3525],r:500},{c:[22.5440,88.3580],r:450}];
+const lmTiles=()=>window.MAP_KEY?L.tileLayer("https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key="+window.MAP_KEY,{maxZoom:19,attribution:"&copy; MapTiler &copy; OpenStreetMap contributors"}):L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors &copy; CARTO"});
+const lmIcon=(x,i)=>L.divIcon({className:"",iconSize:[0,0],html:`<div class="mk lm ${x.db>95?"b":x.db>75?"w":""} ${i==mapSel?"sel":""}">${x.db} dB</div>`});
+function mapv(v){if(!window.L)return mapGrid(v);const o=S.user.role=="officer";
+if(LM){try{LV={c:LM.getCenter(),z:LM.getZoom()};LM.remove()}catch(e){}LM=null}
+v.innerHTML=`<h2>Acoustic map</h2><div class="card" style="padding:10px"><div class="row" style="margin-bottom:8px;gap:6px"><button class="btn g sm" id="hb">${heat?"Heat on":"Heat off"}</button><button class="btn g sm" id="loc">My location</button><button class="btn g sm" id="dg">${drawing?"Tap the map":"Draw geofence"}</button></div><div id="lmap" style="height:380px;border-radius:14px;overflow:hidden;border:1px solid var(--line)"></div><div id="mi" style="margin-top:12px"></div></div>`;
+LM=L.map("lmap").setView(LV?LV.c:[22.5645,88.39],LV?LV.z:12);lmTiles().addTo(LM);
+const hl=L.layerGroup().addTo(LM),dh=()=>{hl.clearLayers();if(heat)sens.forEach(x=>L.circle([x.lat,x.lng],{radius:700,stroke:false,fillColor:x.db>95?"#ff6b6b":x.db>75?"#ffb454":"#3de6d0",fillOpacity:.22,interactive:false}).addTo(hl))};dh();
+const zs=z=>L.circle(z.c,{radius:z.r,color:"#3de6d0",weight:1.5,dashArray:"5 4",fillOpacity:.08,interactive:false}).addTo(LM);gfz.forEach(zs);
+const info=()=>{const s=sens[mapSel];$("#mi").innerHTML=`<b>${s.n}</b><div class="m">${s.p}</div><div class="row m" style="margin:8px 0"><span>Current ${s.db} dBA</span><span>Peak ${s.pk} dBA</span><span>${s.f}</span></div>${o?`<button class="btn" id="du">Dispatch unit</button>`:""}<p class="m" style="margin-top:8px">Sensor readings are sample data. Map data from OpenStreetMap contributors.</p>`;
+if(o)$("#du").onclick=()=>{S.tab="more";S.more="dispatch";S.step=0;S.tgt=s.lat.toFixed(4)+", "+s.lng.toFixed(4);shell()}};
+const mk=sens.map((x,i)=>L.marker([x.lat,x.lng],{icon:lmIcon(x,i)}).addTo(LM).on("click",()=>{mapSel=i;sens.forEach((y,j)=>mk[j].setIcon(lmIcon(y,j)));info()}));info();
+$("#hb").onclick=()=>{heat=!heat;$("#hb").textContent=heat?"Heat on":"Heat off";dh()};
+$("#dg").onclick=()=>{drawing=!drawing;$("#dg").textContent=drawing?"Tap the map":"Draw geofence";if(drawing)toast("Tap the map to place a zone")};
+$("#loc").onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{const c=[p.coords.latitude,p.coords.longitude];L.circleMarker(c,{radius:8,color:"#fff",weight:2,fillColor:"#3d8bff",fillOpacity:1}).addTo(LM);LM.setView(c,15)},()=>toast("Location blocked. Allow it in your browser settings.")):toast("Location is not available");
+LM.on("click",e=>{if(!drawing)return;const z={c:[e.latlng.lat,e.latlng.lng],r:500};gfz.push(z);zs(z);drawing=false;$("#dg").textContent="Draw geofence";toast("Geofence added")});
+setTimeout(()=>LM&&LM.invalidateSize(),60)}
+function mapGrid(v){const s=sens[mapSel],o=S.user.role=="officer";
+v.innerHTML=`<h2>Acoustic map</h2><div class="card" style="padding:10px"><div class="row" style="margin-bottom:8px"><button class="btn g sm" id="hb">${heat?"Heat on":"Heat off"}</button><span class="pill w">Sample data</span><button class="btn g sm" id="dg">${drawing?"Tap the map":"Draw geofence"}</button></div>
+<div class="map ${heat?"heat":""}" id="mp">${boxes.map(b=>`<i class="gf" style="left:${b[0]}%;top:${b[1]}%;width:${b[2]}%;height:${b[3]}%"></i>`).join("")}${sens.map((x,i)=>`<button class="mk ${x.db>95?"b":x.db>75?"w":""} ${i==mapSel?"sel":""}" data-i="${i}" style="left:${x.x}%;top:${x.y}%">${x.db} dB</button>`).join("")}</div>
+<div style="margin-top:12px"><b>${s.n}</b><div class="m">${s.p}</div><div class="row m" style="margin:8px 0"><span>Current ${s.db} dBA</span><span>Peak ${s.pk} dBA</span><span>${s.f}</span></div>${o?`<button class="btn" id="du">Dispatch unit</button>`:""}</div></div>`;
+$("#hb").onclick=()=>{heat=!heat;mapv(v)};
+$("#dg").onclick=()=>{drawing=!drawing;if(drawing)toast("Tap the map to place a zone");mapv(v)};
+document.querySelectorAll(".mk").forEach(b=>b.onclick=e=>{e.stopPropagation();mapSel=+b.dataset.i;mapv(v)});
+$("#mp").onclick=e=>{if(!drawing)return;const r=e.currentTarget.getBoundingClientRect();boxes.push([Math.max(0,(e.clientX-r.left)/r.width*100-6),Math.max(0,(e.clientY-r.top)/r.height*100-7),12,14]);drawing=false;toast("Geofence added");mapv(v)};
+if(o)$("#du").onclick=()=>{S.tab="more";S.more="dispatch";S.step=0;shell()}}
+
+function complaints(v){
+v.innerHTML=`<h2>Report a noise problem</h2><div class="card"><label>Type</label><select id="ty"><option>Loud construction</option><option>Illegal horn</option><option>Loudspeaker or event</option><option>Industrial noise</option></select>
+<label>Location</label><input id="lc" placeholder="Area or landmark"><button class="btn g" id="gp" style="margin-bottom:10px">Use my location</button>
+<label>What is happening?</label><textarea id="ds" rows="3"></textarea><button class="btn" id="sb">Submit complaint</button></div>
+<h2>Your tickets</h2><div id="tk">${S.tickets.map(t=>`<div class="card row"><div><b>${t.id}</b><div class="m">${esc(t.type)}</div></div><span class="pill ${t.st=="In review"?"w":""}">${t.st}</span></div>`).join("")}</div>`;
+$("#gp").onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{$("#lc").value=p.coords.latitude.toFixed(4)+", "+p.coords.longitude.toFixed(4)},()=>toast("Location blocked. Type the area instead.")):toast("Location is not available");
+$("#sb").onclick=()=>{if(!$("#lc").value.trim())return toast("Add a location first");
+S.tickets.unshift({id:"#UNC-"+(1000+Math.floor(Math.random()*9000)),type:$("#ty").value,st:"Received"});toast("Complaint submitted");complaints(v)}}
+
+const AZ=[["North Residential",45.2,50,22],["Metro Construction",82.7,85,55],["East Commercial",62.1,65,38],["Downtown Core",74.8,70,53],["West End Waterfront",58.4,60,31]];
+const HM=[["Mon",[53,53,53,71,76,68,75,78,82,89,89,55]],["Tue",[53,50,57,69,77,77,71,72,90,83,87,58]],["Wed",[49,55,59,73,71,77,71,77,90,85,90,52]],["Thu",[60,54,56,75,73,74,77,77,82,87,82,58]],["Fri",[54,52,49,70,73,77,69,77,82,84,87,56]],["Sat",[52,54,57,78,73,76,77,75,89,88,89,55]],["Sun",[52,50,60,72,69,77,71,75,84,90,83,60]]];
+Object.assign(S,{rng:"7d",sel:[0,1,2,3,4],tz:0});
+const PK=[53.8,91.4,70.2,83.6,66.1],SN=[6,9,5,8,4],FQ=["0.8 kHz","1.4 kHz","1.1 kHz","1.3 kHz","0.9 kHz"];
+const BANDS=[["Low risk","var(--ac)","Comfortable. Close to the WHO guideline level for daytime road traffic noise."],["Moderate risk","#d9c24a","Annoyance and sleep disturbance can begin, mostly at night."],["High risk","var(--warn)","Long exposure raises stress and heart-health risk."],["Severe risk","var(--bad)","Hearing damage is possible with prolonged exposure."]];
+const hb=d=>d<55?0:d<70?1:d<85?2:3;
+const rk=p=>p>50?["High","var(--bad)"]:p>=30?["Moderate","var(--warn)"]:["Low","var(--ac)"];
+function analytics(v){const t=AZ[S.tz],over=t[1]>t[2],Zs=AZ.filter((_,i)=>S.sel.includes(i)),avgDb=Zs.length?+(Zs.reduce((a,z)=>a+z[1],0)/Zs.length).toFixed(1):0,bd=BANDS[hb(avgDb)],pos=Math.max(0,Math.min(100,(avgDb-40)/60*100));const Z=AZ.filter((_,i)=>S.sel.includes(i)),avg=Z.length?Math.round(Z.reduce((a,z)=>a+z[3],0)/Z.length):0,ofs={"24h":0,"7d":-1,"30d":-3}[S.rng];
+const Y=d=>(120-(d+ofs-40)*2.4).toFixed(1),pts=a=>a.map((d,i)=>`${i*37.5},${Y(d)}`).join(" ");
+const A=[54,56,66,64,67,66,69,64,65],F=[58,60,63,66,68,69,70,67,64];
+const cl=x=>x>75?"var(--bad)":x>65?"var(--warn)":"var(--ac)",bg=x=>x>75?"rgba(255,107,90,.25)":x>65?"rgba(255,179,71,.22)":"var(--ac2)";
+v.innerHTML=`<div class="row"><h2 style="margin:0">Trends and forecast</h2><span class="pill w">Sample data</span></div>
+<div class="seg" style="margin-top:10px">${[["24h","Today"],["7d","7 days"],["30d","30 days"]].map(r=>`<button data-r2="${r[0]}" class="${S.rng==r[0]?"on":""}">${r[1]}</button>`).join("")}</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${AZ.map((z,i)=>`<button class="pill" data-z="${i}" style="cursor:pointer;border:1px solid var(--line);opacity:${S.sel.includes(i)?1:.45}">${z[0]}</button>`).join("")}</div>
+<div class="card"><div class="row"><div><b>Noise stress index</b><div class="m">Estimated stress risk per zone</div></div><div class="center"><div class="big" style="color:${rk(avg)[1]}">${avg}%</div><div class="m">network average</div></div></div>
+<div class="row m" style="margin:10px 0;flex-wrap:wrap"><span>L noise level 45%</span><span>E exposure 25%</span><span>D time of day 15%</span><span>S source severity 15%</span></div>
+${Z.map(z=>`<div style="margin-bottom:10px"><div class="row"><span>${z[0]}</span><span class="m">${z[1]} dBA · <b style="color:${rk(z[3])[1]}">${z[3]}% ${rk(z[3])[0]}</b></span></div><div style="height:6px;background:var(--bg);border-radius:4px"><div style="height:6px;width:${z[3]}%;background:${rk(z[3])[1]};border-radius:4px"></div></div></div>`).join("")||`<p class="m">Select at least one zone.</p>`}
+<p class="m">Risk estimate only. It is not a clinical measurement.</p></div>
+<div class="card"><b>Actual vs AI forecast</b><svg viewBox="0 0 300 120" preserveAspectRatio="none" style="width:100%;height:150px;margin-top:8px;background:var(--bg);border-radius:8px"><line x1="0" x2="300" y1="48" y2="48" stroke="var(--bad)" stroke-dasharray="4 3" stroke-width="1.2" vector-effect="non-scaling-stroke"/><polyline points="${pts(F)}" fill="none" stroke="var(--mut)" stroke-dasharray="5 3" stroke-width="1.5" vector-effect="non-scaling-stroke"/><polyline points="${pts(A)}" fill="none" stroke="var(--ac)" stroke-width="2.2" vector-effect="non-scaling-stroke"/></svg>
+<div class="row m"><span>12 am</span><span>6 am</span><span>12 pm</span><span>6 pm</span><span>12 am</span></div><p class="m" style="margin-top:6px">Solid line: actual. Dashed grey: AI forecast. Dashed red: 70 dB threshold.</p></div>
+<div class="card"><b>Weekly exceedance heatmap</b><div style="display:grid;grid-template-columns:30px repeat(12,1fr);gap:3px;margin-top:8px;font-size:10px;text-align:center"><span></span>${[0,2,4,6,8,10,12,14,16,18,20,22].map(h=>`<span class="m" style="font-size:10px">${h}h</span>`).join("")}${HM.map(r=>`<span class="m" style="font-size:11px;text-align:left;align-self:center">${r[0]}</span>`+r[1].map(x=>`<span style="background:${bg(x)};color:${cl(x)};border-radius:4px;padding:6px 0">${x}</span>`).join("")).join("")}</div>
+<div class="row m" style="margin-top:10px;flex-wrap:wrap"><span>Safe: under 65 dB</span><span style="color:var(--warn)">Elevated: 65 to 75</span><span style="color:var(--bad)">Hazard: over 75</span></div></div>
+<div class="card"><b>Sector decibel comparison</b>${Z.map(z=>`<div style="margin-top:10px"><div class="row"><span>${z[0]}</span><b style="color:${z[1]>z[2]?"var(--bad)":"var(--ac)"}">${z[1]} / ${z[2]} dB</b></div><div style="height:6px;background:var(--bg);border-radius:4px;margin-top:4px"><div style="height:6px;width:${Math.min(100,z[1]/z[2]*100)}%;background:${z[1]>z[2]?"var(--bad)":"var(--ac)"};border-radius:4px"></div></div></div>`).join("")}</div>
+<div class="card"><div class="row"><b>Zone telemetry</b><select id="tz" style="width:auto;margin:0;padding:8px 10px">${AZ.map((z,i)=>`<option value="${i}" ${S.tz==i?"selected":""}>${z[0]}</option>`).join("")}</select></div>
+<div class="row" style="margin:14px 0 4px;align-items:flex-end"><div><div class="big" style="text-transform:none">${t[1]} <span class="m">dBA</span></div><div class="m">Limit ${t[2]} dB</div></div><span class="pill ${over?"b":""}">${over?"Over limit":"Within limit"}</span></div>
+<div style="height:6px;background:var(--bg);border-radius:4px;margin:8px 0 12px"><div style="height:6px;width:${Math.min(100,t[1]/t[2]*100)}%;background:${over?"var(--bad)":"var(--ac)"};border-radius:4px"></div></div>
+<div class="row m"><span>Peak ${PK[S.tz]} dBA</span><span>${FQ[S.tz]}</span><span>${SN[S.tz]} sensors</span></div></div>
+<div class="card"><div class="row"><b>WHO acoustic health risk</b><span class="pill">ISO 1996 reference</span></div>
+<div style="position:relative;margin:20px 0 6px"><div style="display:flex;height:10px;border-radius:6px;overflow:hidden">${BANDS.map(b=>`<i style="flex:1;background:${b[1]}"></i>`).join("")}</div><span style="position:absolute;top:-7px;left:${pos}%;width:3px;height:24px;background:var(--tx);border-radius:2px;transform:translateX(-50%)"></span></div>
+<div class="row m"><span>40</span><span>55</span><span>70</span><span>85</span><span>100 dB</span></div>
+<p style="margin-top:12px"><b style="color:${bd[1]}">${bd[0]}</b> at ${avgDb} dBA average across the selected zones. ${bd[2]}</p>
+<p class="m" style="margin-top:8px">Simplified from WHO and ISO 1996 guidance. This is not a medical assessment.</p></div>
+<div class="row"><button class="btn g" id="ec">Export CSV</button><button class="btn" id="ep">Print or save PDF</button></div>`;
+document.querySelectorAll("[data-r2]").forEach(b=>b.onclick=()=>{S.rng=b.dataset.r2;analytics(v)});
+document.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{const i=+b.dataset.z;S.sel=S.sel.includes(i)?S.sel.filter(x=>x!=i):[...S.sel,i];analytics(v)});
+$("#tz").onchange=e=>{S.tz=+e.target.value;analytics(v)};
+$("#ec").onclick=()=>{try{const c="zone,dBA,limit,stress_pct\n"+Z.map(z=>z.join(",")).join("\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv"}));a.download="urbannoisenet-zones.csv";a.click()}catch(e){toast("Export is not available here")}};
+$("#ep").onclick=()=>{try{window.print()}catch(e){toast("Print is not available here")}}}
+
+function more(v){const o=S.user.role=="officer",m=S.more;
+if(m){v.innerHTML=`<button class="btn g" id="bk" style="width:auto;margin-bottom:12px">Back</button>`+pages[m]();if(m=="dispatch")bindDispatch();if(m=="developer")bindDev();$("#bk").onclick=()=>{S.more=null;more(v)};return}
+const items=[...(o?[["zones","Zones","Noise limits per area"],["challans","E-challans","Issued citations"],["dispatch","Emergency dispatch","Send the nearest unit"]]:[]),["about","About","What this app does"],["developer","Developer","Who built it"]];
+v.innerHTML=`<h2>More</h2>${items.map(i=>`<div class="card row" data-p="${i[0]}" style="cursor:pointer" tabindex="0"><div><b>${i[1]}</b><div class="m">${i[2]}</div></div><span class="m">›</span></div>`).join("")}<button class="btn g" id="lo">Log out</button>`;
+document.querySelectorAll("[data-p]").forEach(c=>c.onclick=()=>{S.more=c.dataset.p;more(v)});
+$("#lo").onclick=()=>{setTok("");S.user=null;S.res=null;S.err="";auth()}}
+
+const pages={
+zones:()=>`<h2>Monitoring zones</h2><p class="m" style="margin-bottom:10px">Sample zones. Real zones need a database.</p>${zones.map(z=>`<div class="card row"><div><b>${z[0]}</b><div class="m">Curfew ${z[2]}</div></div><span class="pill w">${z[1]} dB</span></div>`).join("")}`,
+challans:()=>`<h2>E-challans</h2><p class="m" style="margin-bottom:10px">Sample records.</p>${challans.map(c=>`<div class="card"><div class="row"><b>${c[0]} · ${c[1]}</b><span class="pill ${c[5]=="Paid"?"":"b"}">${c[5]}</span></div><div class="m">${c[2]} dB at ${c[3]} · Fine ${c[4]}</div></div>`).join("")}`,
+dispatch:()=>{const p=S.step>=4?.5:0,ux=25+53*p,uy=62-32*p,c=S.sev=="crit";return `<div class="row"><h2 style="margin:0">Enforcement dispatch</h2><span class="pill ${S.step>=4?"":"w"}">${S.step==0?"Standby":S.step>=4?"En route":"In progress"}</span></div>
+<div class="seg" style="margin-top:10px"><button data-g="manual" class="${S.gps=="manual"?"on":""}">Manual simulation</button><button data-g="auto" class="${S.gps=="auto"?"on":""}">Auto live GPS</button></div>
+<div class="card" id="ds"></div>
+<label>Severity class</label><div class="seg"><button data-s="crit" class="${c?"on":""}">Critical (over 90 dB)</button><button data-s="std" class="${c?"":"on"}">Standard warning (over 75 dB)</button></div>
+<label>Patrol instructions</label><textarea id="pi" rows="2">${esc(S.note)}</textarea>
+<div class="card"><div class="row"><b>Patrol intercept map</b><span class="m">Target ${S.tgt}</span></div>
+<div class="map" style="height:190px;margin-top:10px"><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><line x1="${ux}" y1="${uy}" x2="78" y2="30" stroke="var(--ac)" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/></svg><span class="mk sel" style="left:${ux}%;top:${uy}%">Patrol unit 7</span><span class="mk b" style="left:78%;top:30%">Target violation</span></div>
+<div class="row m" style="margin-top:10px;flex-wrap:wrap"><span>Hub: Salt Lake Civic Enforcement</span><span>Officer: Marshal J. Vance</span><span>ETA ${S.step>=4?"4 min":"-"}</span><span>Distance 1.4 km</span></div></div>
+<button class="btn" id="nx"></button>`},
+about:()=>`<h2>About UrbanNoiseNet</h2><div class="card"><p>UrbanNoiseNet listens through your phone's microphone and tells you what is making the noise, such as a siren, drilling or a car horn.</p></div>
+<div class="card"><b>How it works</b><p class="m">A short clip is sent to a server. A model trained on labelled city sounds (UrbanSound8K) names the sound and estimates how loud it is. If a zone's limit is passed, officers can issue a challan or send help.</p></div>
+<div class="card"><b>The model</b><p class="m">A Random Forest trained on 40 audio features (MFCC). It can recognise: ${S.classes?S.classes.map(nice).join(", "):"loading from the server..."}.</p></div>`,
+developer:()=>`<div class="center" style="margin:6px 0 18px"><label class="av" style="margin:0 auto 12px;width:92px;height:92px;cursor:pointer;overflow:hidden" title="Tap to add a photo">${S.photo?`<img src="${S.photo}" alt="Developer photo" style="width:100%;height:100%;object-fit:cover">`:"SN"}<input type="file" accept="image/*" id="ph" style="display:none"></label><h2 style="margin:0">Sugata Nayak</h2><p class="m">Machine learning, backend, frontend and deployment</p><p class="m" style="margin-top:4px">Tap the circle to add your photo</p></div>
+<div class="row" style="margin-bottom:14px;gap:8px">${[[S.classes?S.classes.length:"-","sound classes"],["40","audio features"],["200","forest trees"]].map(x=>`<div class="card center" style="flex:1;margin:0;padding:12px 6px"><div style="font-size:19px;font-weight:800">${x[0]}</div><div class="m">${x[1]}</div></div>`).join("")}</div>
+<div class="card"><b>Tech stack</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${["Python","FastAPI","scikit-learn","librosa","React","Vite","Tailwind","Render","Vercel"].map(t=>`<span class="pill">${t}</span>`).join("")}</div></div>
+<div class="card"><b>Links</b>${[["GitHub profile","https://github.com/TECH-SUGATA"],["Project repository","https://github.com/TECH-SUGATA/UrbanNoiseNet"],["Backend repository","https://github.com/TECH-SUGATA/urbannoisenet-backend"],["Live demo","https://urban-noise-net.vercel.app"]].map(l=>`<div style="padding:9px 0;border-top:1px solid var(--line)"><a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a></div>`).join("")}</div>`};
+
+Object.assign(S,{sev:"crit",gps:"manual",note:"Excessive horn and vehicle noise reported. Respond to the marked location.",tgt:"22.5726, 88.3639",run:0});
+const steps=[["Noise incident detected",""],["Nearest unit identified","Salt Lake Civic Enforcement Hub (1.4 km)"],["SMS relay sent","Dispatch message sent to the patrol radio"],["Unit en route","Estimated arrival in 4 minutes"]];
+function bindDispatch(){const v=$("#v"),re=()=>{if(S.more=="dispatch")more(v)};
+const draw=()=>{$("#ds").innerHTML=steps.map((s,i)=>`<div class="step ${i<S.step?"d":""}"><span>${i+1}</span><div><b>${s[0]}</b><div class="m">${i==0?"Level above "+(S.sev=="crit"?90:75)+" dB, confirmed by AI classification":s[1]}</div></div></div>`).join("");
+$("#nx").textContent=S.step>=4?"Reset":S.run?"Dispatching...":"Trigger emergency dispatch";$("#nx").disabled=!!S.run};draw();
+$("#pi").oninput=e=>{S.note=e.target.value};
+document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{S.sev=b.dataset.s;re()});
+document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{S.gps=b.dataset.g;if(S.gps!="auto")return re();
+if(!navigator.geolocation){S.gps="manual";return re()}
+navigator.geolocation.getCurrentPosition(p=>{S.tgt=p.coords.latitude.toFixed(4)+", "+p.coords.longitude.toFixed(4);re()},()=>{S.gps="manual";toast("Location blocked. Staying on manual.");re()})});
+$("#nx").onclick=()=>{if(S.step>=4){S.step=0;return re()}S.run=1;S.step=0;re();const tick=()=>{S.step++;if(S.step>=4)S.run=0;re();if(S.run)setTimeout(tick,900)};setTimeout(tick,600)}}
+
+function bindDev(){$("#ph").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{S.photo=r.result;more($("#v"))};r.readAsDataURL(f)}}
+if("serviceWorker"in navigator&&/^https?:$/.test(location.protocol))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+splash();
+</script>
+</body>
+</html>
